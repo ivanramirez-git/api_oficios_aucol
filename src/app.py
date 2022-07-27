@@ -50,6 +50,30 @@ def get_tasks():
 def get_task(id):
     task = Task.query.get(id)
     return task_schema.jsonify(task)
+
+@app.route('/tasks/<id>', methods=['PUT'])
+def update_task(id):
+    task = Task.query.get(id)
+
+    title = request.json['title']
+    description = request.json['description']
+
+    task.title = title
+    task.description = description
+
+    db.session.commit()
+
+    return task_schema.jsonify(task)
+
+
+@app.route('/tasks/<id>', methods=['DELETE'])
+def delete_task(id):
+    task = Task.query.get(id)
+
+    db.session.delete(task)
+    db.session.commit()
+
+    return task_schema.jsonify(task)
     
 if __name__ == '__main__':
     app.run(debug=True)
