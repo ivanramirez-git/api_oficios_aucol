@@ -1,79 +1,56 @@
 # importamos flask
 from flask import Flask, jsonify, request
-from flask_sqlalchemy import SQLAlchemy
+from flask_mysqldb import MySQL
 from flask_marshmallow import Marshmallow
+from config import config
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:@localhost/aucol_develop'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config.from_object(config['development'])
 
-db = SQLAlchemy(app)
+
+db = MySQL(app)
 ma = Marshmallow(app)
 
-class Task(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text, nullable=False)
+# Models:
+from models.ModelUser import ModelUser
 
-    def __init__(self, title, description):
-        self.title = title
-        self.description = description
+# Entities:
+from models.entities.User import User
 
-db.create_all()
-
-class TaskSchema(ma.Schema):
-    class Meta:
-        fields = ('id', 'title', 'description')
-
-task_schema = TaskSchema()
-tasks_schema = TaskSchema(many=True)
-
-@app.route('/tasks', methods=['POST'])
-def create_task():
-    title = request.json['title']
-    description = request.json['description']
-
-    new_task = Task(title, description)
-
-    db.session.add(new_task)
-    db.session.commit()
-
-    return task_schema.jsonify(new_task)
-
-@app.route('/tasks', methods=['GET'])
-def get_tasks():
-    all_tasks = Task.query.all()
-    result = tasks_schema.dump(all_tasks)
-    return jsonify(result)
+# Creación de tablas
     
-@app.route('/tasks/<id>', methods=['GET'])
-def get_task(id):
-    task = Task.query.get(id)
-    return task_schema.jsonify(task)
+# Ruta login
+@app.route('/login', methods=['POST'])
+def login():
+    # Obtenemos los datos del usuario
+    print(request.json)
+    user =  User(None, request.json['username'], request.json['password'], None, None, None, None)
+    logger_user = ModelUser.login(db, user)
+    if logger_user is not None:
+        return jsonify(logger_user.__dict__)
+    else:
+        return jsonify({"error": "Usuario o contraseña incorrectos"})
 
-@app.route('/tasks/<id>', methods=['PUT'])
-def update_task(id):
-    task = Task.query.get(id)
+# Ruta registro
+@app.route('/register', methods=['POST'])
+def register():
+    # Obtenemos los datos del usuario
+    print(request.json)
+    user =  User(0, request.json['username'], request.json['password'], request.json['email'], request.json['fullname'], request.json['role'], request.json['code'])
+    if ModelUser.register(db, user):
+        return jsonify({"success": "Usuario registrado correctamente"})
+    else:
+        return jsonify({"error": "Usuario o contraseña incorrectos"})
 
-    title = request.json['title']
-    description = request.json['description']
+# Ruta Consula por id
+@app.route('/get_by_id/<int:id>', methods=['GET'])
+def get_by_id(id):
+    user = ModelUser.get_by_id(db, id)
+    if user is not None:
+        return jsonify(user.__dict__)
+    else:
+        return jsonify({"error": "Usuario no encontrado"})
 
-    task.title = title
-    task.description = description
-
-    db.session.commit()
-
-    return task_schema.jsonify(task)
-
-
-@app.route('/tasks/<id>', methods=['DELETE'])
-def delete_task(id):
-    task = Task.query.get(id)
-
-    db.session.delete(task)
-    db.session.commit()
-
-    return task_schema.jsonify(task)
-    
+# Inicio del programa
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()

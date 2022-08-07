@@ -1,0 +1,17 @@
+{
+    "sqltools.connections": [
+        {
+            "mysqlOptions": {
+                "authProtocol": "default"
+            },
+            "previewLimit": 50,
+            "server": "sql10.freesqldatabase.com",
+            "port": 3306,
+            "driver": "MySQL",
+            "name": "Aucol Base Datos Desarollo",
+            "database": "sql10511207",
+            "username": "sql10511207",
+            "password": "kYFTyGWvH3"
+        }
+    ]
+}
